@@ -13,6 +13,13 @@
              {}
              attr-map))
 
+(defn- select-content [tag content]
+  (filter (comp (partial = tag) :tag) content))
+
+(defn- assoc-not-empty [m k v]
+  (cond-> m
+    (not-empty v) (assoc k v)))
+
 (defmulti handle-tag :tag)
 
 (defmethod handle-tag :testsuites [el]
@@ -24,8 +31,28 @@
        (remove nil?)))
 
 (defmethod handle-tag :testcase [el]
-  (select-attrs el {:name :test-case
-                    :classname :class-name}))
+  (-> (select-attrs el {:name :test-case
+                        :classname :class-name})
+      (assoc-not-empty :failures
+                       (->> (:content el)
+                            (select-content :failure)
+                            (map handle-tag)))
+      (assoc-not-empty :errors
+                       (->> (:content el)
+                            (select-content :error)
+                            (map handle-tag)))))
+
+(defn- handle-error [el]
+  (-> (select-attrs el {:message :message
+                        :type :type})
+      (assoc :description (some-> (apply str (:content el))
+                                  (.trim)))))
+
+(defmethod handle-tag :failure [el]
+  (handle-error el))
+
+(defmethod handle-tag :error [el]
+  (handle-error el))
 
 (defmethod handle-tag :default [_]
   nil)
