@@ -1,0 +1,25 @@
+{:deps {com.monkeyci/app {:mvn/version "0.5.1"}}
+
+ :paths ["src"]
+ 
+ :aliases
+ {:test
+  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.2.0"}}
+   :extra-paths ["test"]
+   :exec-fn monkey.test/all}
+
+  :junit
+  {:exec-fn monkey.test/junit}
+
+  :watch
+  {:exec-fn monkey.test/watch}
+
+  :jar
+  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.2.0"}}
+   :exec-fn monkey.build/jar
+   :exec-args {:jar "target/plugin-clj.jar"
+               :version-env "LIB_VERSION"
+               :lib com.monkeyci/plugin-clj}}
+  
+  :publish
+  {:exec-fn monkey.build/jar+deploy}}}
