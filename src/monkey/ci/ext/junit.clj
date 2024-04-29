@@ -23,12 +23,13 @@
 (defmulti handle-tag :tag)
 
 (defmethod handle-tag :testsuites [el]
-  (->> (mapcat handle-tag (:content el))
+  (->> (map handle-tag (:content el))
        (remove nil?)))
 
 (defmethod handle-tag :testsuite [el]
-  (->> (map handle-tag (:content el))
-       (remove nil?)))
+  (-> (:attrs el)
+      (assoc :test-cases (->> (map handle-tag (:content el))
+                              (remove nil?)))))
 
 (defmethod handle-tag :testcase [el]
   (-> (select-attrs el {:name :test-case
