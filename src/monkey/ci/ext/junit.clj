@@ -3,6 +3,9 @@
    contents of the `junit.xml` test result file, and converts it to a
    format that can be used in MonkeyCI job results."
   (:require [clojure.xml :as xml]
+            [monkey.ci.build
+             [api :as api]
+             [archive :as arch]]
             [monkey.ci.extensions :as e]))
 
 (defn- select-attrs [el attr-map]
@@ -65,4 +68,8 @@
           (handle-tag)))))
 
 (defmethod e/after-job :junit [_ rt]
-  (parse-xml rt))
+  (let [{:keys [artifact-id path]} (e/get-config rt :junit)
+        xml (some-> artifact-id
+                    (as-> x (api/download-artifact rt x))
+                    (arch/extract+read path))]
+    (e/set-value rt :monkey.ci/tests (parse-xml xml))))

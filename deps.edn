@@ -1,11 +1,11 @@
-{:deps {com.monkeyci/app {:mvn/version "0.5.1"}}
+{:deps {com.monkeyci/app {:mvn/version "0.5.2"}}
 
  :paths ["src"]
  
  :aliases
  {:test
   {:extra-deps {com.monkeyprojects/build {:mvn/version "0.2.0"}}
-   :extra-paths ["test"]
+   :extra-paths ["test" "dev-resources"]
    :exec-fn monkey.test/all}
 
   :junit

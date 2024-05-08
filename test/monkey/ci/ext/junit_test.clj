@@ -1,6 +1,10 @@
 (ns monkey.ci.ext.junit-test
-  (:require [monkey.ci.ext.junit :as sut]
-            [clojure.test :refer [deftest testing is]]))
+  (:require [clojure.test :refer [deftest testing is]]
+            [clojure.java.io :as io]
+            [monkey.ci.ext.junit :as sut]
+            [monkey.ci.build.api :as api]
+            [monkey.ci.extensions :as ext])
+  (:import [java.io ByteArrayInputStream]))
 
 (deftest parse-xml
   (testing "`nil` if no xml"
@@ -53,7 +57,7 @@
                first
                :test-cases))))
 
-  (testing "test suite with failing case"
+  (testing "test suite with error case"
     (is (= [{:test-case "single-test"
              :errors [{:message "test error"
                        :type "TestType"
@@ -71,3 +75,17 @@
                first
                :test-cases)))))
     
+(deftest after-job
+  (let [rt {:build {:sid ["test-cust" "test-repo" "test-build"]}
+            :job {:junit {:artifact-id "test-results"
+                          :path "junit.xml"}
+                  :save-artifacts [{:id "test-results"
+                                    :path "junit.xml"}]}}]
+    (with-redefs [api/download-artifact (fn [_ id]
+                                          (when (= id "test-results")
+                                            (io/input-stream (io/resource "test-results.tgz"))))]
+      (testing "sets parsed xml results in the job result"
+        (is (not-empty (-> (ext/after-job :junit rt)
+                           :job
+                           :result
+                           :monkey.ci/tests)))))))
