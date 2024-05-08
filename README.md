@@ -7,6 +7,8 @@ parses the information.
 
 ## Usage
 
+[![Clojars Project](https://img.shields.io/clojars/v/com.monkeyci/plugin-clj.svg)](https://clojars.org/com.monkeyci/plugin-clj)
+
 First include the library in your build `deps.edn`:
 
 ```clojure
@@ -44,4 +46,5 @@ key `monkey.ci/tests`.
 ## License
 
 Copyright (c) 2024 by [Monkey Projects](https://www.monkey-projects.be).
+
 [MIT License](LICENSE)
