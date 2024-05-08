@@ -10,7 +10,7 @@ parses the information.
 First include the library in your build `deps.edn`:
 
 ```clojure
-{:deps {com.monkeyci/junit-plugin {:mvn/version "VERSION"}}}
+{:deps {com.monkeyci/plugin-junit {:mvn/version "VERSION"}}}
 ```
 
 Then make sure you `require` it in your build script.  It registers itself on a tag
