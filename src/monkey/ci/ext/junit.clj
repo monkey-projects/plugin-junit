@@ -2,7 +2,9 @@
   "Main namespace for the junit extension.  It can be used to read the
    contents of the `junit.xml` test result file, and converts it to a
    format that can be used in MonkeyCI job results."
-  (:require [clojure.xml :as xml]
+  (:require [clojure.tools.logging :as log]
+            [clojure.xml :as xml]
+            [diehard.core :as dh]
             [monkey.ci.build
              [api :as api]
              [archive :as arch]]
@@ -67,9 +69,19 @@
       (-> (xml/parse is)
           (handle-tag)))))
 
+(defn- download-artifact [artifact-id rt]
+  ;; It may occur that the artifact in question is not available yet.  So
+  ;; retry a few times.
+  (dh/with-retry {:retry-on Exception
+                  :max-retries 5
+                  :delay-ms 1000
+                  :on-retry (fn [_ ex]
+                              (log/warnf "Unable to download artifact (%s), retrying..." (ex-message ex)))}
+    (api/download-artifact rt artifact-id)))
+
 (defmethod e/after-job :junit [_ rt]
   (let [{:keys [artifact-id path]} (e/get-config rt :junit)
         xml (some-> artifact-id
-                    (as-> x (api/download-artifact rt x))
+                    (download-artifact rt)
                     (arch/extract+read path))]
     (e/set-value rt :monkey.ci/tests (parse-xml xml))))
