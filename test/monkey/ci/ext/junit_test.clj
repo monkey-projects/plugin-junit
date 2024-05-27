@@ -26,11 +26,11 @@
             </testsuites>"))))
 
   (testing "parses elapsed time"
-    (is (= 1.0
+    (is (= 0.045
            (-> (sut/parse-xml
                 "<testsuites>
                   <testsuite name=\"single suite\">
-                    <testcase name=\"single-test\" classname=\"test.class\" time=\"1\"></testcase>
+                    <testcase name=\"single-test\" classname=\"test.class\" time=\"0.045\"></testcase>
                   </testsuite>
                 </testsuites>")
                first

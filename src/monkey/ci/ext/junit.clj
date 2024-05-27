@@ -34,7 +34,7 @@
 
 (defmethod handle-tag :testsuite [el]
   (-> (:attrs el)
-      (mc/update-existing :time parse-float)
+      (mc/update-existing :time parse-double)
       (assoc :test-cases (->> (map handle-tag (:content el))
                               (remove nil?)))))
 
@@ -42,7 +42,7 @@
   (-> (select-attrs el {:name :test-case
                         :classname :class-name
                         :time :time})
-      (mc/update-existing :time parse-float)
+      (mc/update-existing :time parse-double)
       (assoc-not-empty :failures
                        (->> (:content el)
                             (select-content :failure)
