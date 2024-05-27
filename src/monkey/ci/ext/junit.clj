@@ -5,6 +5,7 @@
   (:require [clojure.tools.logging :as log]
             [clojure.xml :as xml]
             [diehard.core :as dh]
+            [medley.core :as mc]
             [monkey.ci.build
              [api :as api]
              [archive :as arch]]
@@ -33,12 +34,15 @@
 
 (defmethod handle-tag :testsuite [el]
   (-> (:attrs el)
+      (mc/update-existing :time parse-float)
       (assoc :test-cases (->> (map handle-tag (:content el))
                               (remove nil?)))))
 
 (defmethod handle-tag :testcase [el]
   (-> (select-attrs el {:name :test-case
-                        :classname :class-name})
+                        :classname :class-name
+                        :time :time})
+      (mc/update-existing :time parse-float)
       (assoc-not-empty :failures
                        (->> (:content el)
                             (select-content :failure)

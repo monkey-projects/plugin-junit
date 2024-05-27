@@ -25,6 +25,19 @@
               </testsuite>
             </testsuites>"))))
 
+  (testing "parses elapsed time"
+    (is (= 1.0
+           (-> (sut/parse-xml
+                "<testsuites>
+                  <testsuite name=\"single suite\">
+                    <testcase name=\"single-test\" classname=\"test.class\" time=\"1\"></testcase>
+                  </testsuite>
+                </testsuites>")
+               first
+               :test-cases
+               first
+               :time))))
+
   (testing "ignores unsupported tags"
     (is (= [{:test-case "single-test"}]
            (-> (sut/parse-xml
