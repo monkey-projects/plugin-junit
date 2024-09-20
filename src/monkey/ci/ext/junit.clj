@@ -88,4 +88,6 @@
         xml (some-> artifact-id
                     (download-artifact rt)
                     (arch/extract+read path))]
+    (when-not xml
+      (log/warnf "Junit XML artifact '%s' not found or contents was empty, unit test results will not be added to build.  Path: %s" artifact-id path))
     (e/set-value rt :monkey.ci/tests (parse-xml xml))))
