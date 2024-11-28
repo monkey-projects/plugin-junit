@@ -2,7 +2,9 @@
   (:require [clojure.test :refer [deftest testing is]]
             [clojure.java.io :as io]
             [monkey.ci.ext.junit :as sut]
-            [monkey.ci.build.api :as api]
+            [monkey.ci.build
+             [api :as api]
+             [core :as bc]]
             [monkey.ci.extensions :as ext])
   (:import [java.io ByteArrayInputStream]))
 
@@ -102,3 +104,17 @@
                            :job
                            :result
                            :monkey.ci/tests)))))))
+
+(deftest artifact
+  (testing "creates artifact structure for junit"
+    (is (= {:artifact-id "test-art"
+            :path "test/path"}
+           (sut/artifact "test-art" "test/path")))))
+
+(deftest junit
+  (testing "sets and gets junit config on the job"
+    (let [job (bc/action-job "test-job" (constantly nil))
+          art (sut/artifact "test-art" "junit.xml")]
+      (is (= art (-> job
+                     (sut/junit art)
+                     (sut/junit)))))))

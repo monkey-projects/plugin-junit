@@ -1,4 +1,4 @@
-{:deps {com.monkeyci/app {:mvn/version "0.7.5-SNAPSHOT"}
+{:deps {com.monkeyci/app {:mvn/version "0.10.1"}
         diehard/diehard {:mvn/version "0.11.12"}}
 
  :paths ["src"]

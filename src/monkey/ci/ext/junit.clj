@@ -84,10 +84,23 @@
     (api/download-artifact rt artifact-id)))
 
 (defmethod e/after-job :junit [_ rt]
-  (let [{:keys [artifact-id path]} (e/get-config rt :junit)
-        xml (some-> artifact-id
+  (let [{:keys [id artifact-id path]} (e/get-config rt :junit)
+        xml (some-> (or id artifact-id)
                     (download-artifact rt)
                     (arch/extract+read path))]
     (when-not xml
       (log/warnf "Junit XML artifact '%s' not found or contents was empty, unit test results will not be added to build.  Path: %s" artifact-id path))
     (e/set-value rt :monkey.ci/tests (parse-xml xml))))
+
+(defn artifact
+  "Creates an artifact definition that can be configured on the job that outputs junit results."
+  [id path]
+  {:artifact-id id
+   :path path})
+
+(defn junit
+  "Gets or sets the junit artifact on the job"
+  ([job]
+   (:junit job))
+  ([job art]
+   (assoc job :junit art)))
