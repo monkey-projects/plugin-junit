@@ -19,21 +19,19 @@ Then make sure you `require` it in your build script.  It registers itself on a 
 named `junit`, which should contain the necessary configuration.  For example:
 
 ```clojure
-(require '[monkey.ci.ext.junit])
-(require '[monkey.ci.build.core :as bc])
+(ns build
+  (:require [monkey.ci.ext.junit :as j]
+            [monkey.ci.build.v2 :as m]))
 
 ;; Some build job
 (def test-job
-  (bc/action-job
-    "test-job"
-    (fn [ctx]
-      ;; Test functionality goes here
-      )
-    {:save-artifacts [{:id "test-results"
-                       :path "junit.xml"}]
-     ;; Configuration for the plugin
-     :junit {:artifact-id "test-results"
-             :path "junit.xml"}}))
+  (-> (m/container-job "run-tests")
+      (m/image "docker.io/clojure")
+      (m/script ["lein test-junit"])
+      (m/save-artifacts [(m/artifact "test-results" "junit.xml")])
+      ;; Configuration for the plugin
+      (j/junit {:artifact-id "test-results"
+                :path "junit.xml"})))
 
 ;; Jobs in your build script
 [test-job]
@@ -43,8 +41,28 @@ The plugin will read the artifact with id `test-results` and extract the `junit.
 from it, parsing it as xml.  The information is added to the build job results under the
 key `monkey.ci/tests`.
 
+### Multiple Files
+
+Many test tools, such as [Apache Maven](https://maven.apache.org/) will generate multiple
+test result files in a directory.  It's possible to specify a `pattern` instead of a `path`
+for these situations.  The extension will then look up all files matching the pattern in the
+archive, and consolidate all extracted test results.
+
+```clojure
+;; Some build job
+(def test-job
+  (-> (m/container-job "run-tests")
+      (m/image "docker.io/maven")
+      (m/script ["mvn verify"])
+      (m/save-artifacts [(m/artifact "test-results" "target/surefire-reports")])
+      ;; Configuration for the plugin
+      (j/junit {:artifact-id "test-results"
+                ;; Use regex pattern instead of path
+                :pattern #"surefire-reports/.*.xml"})))
+```
+
 ## License
 
-Copyright (c) 2024 by [Monkey Projects](https://www.monkey-projects.be).
+Copyright (c) 2024-2025 by [Monkey Projects](https://www.monkey-projects.be).
 
 [MIT License](LICENSE)
