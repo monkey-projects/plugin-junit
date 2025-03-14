@@ -73,6 +73,11 @@
       (-> (xml/parse is)
           (handle-tag)))))
 
+(defn parse-xmls
+  "Parses and consolidates multiple xml files"
+  [xmls]
+  (mapcat parse-xml xmls))
+
 (defn- download-artifact [artifact-id rt]
   ;; It may occur that the artifact in question is not available yet.  So
   ;; retry a few times.
@@ -84,13 +89,16 @@
     (api/download-artifact rt artifact-id)))
 
 (defmethod e/after-job :junit [_ rt]
-  (let [{:keys [id artifact-id path]} (e/get-config rt :junit)
-        xml (some-> (or id artifact-id)
-                    (download-artifact rt)
-                    (arch/extract+read path))]
-    (when-not xml
-      (log/warnf "Junit XML artifact '%s' not found or contents was empty, unit test results will not be added to build.  Path: %s" artifact-id path))
-    (e/set-value rt :monkey.ci/tests (parse-xml xml))))
+  (let [{:keys [id artifact-id path pattern]} (e/get-config rt :junit)
+        xmls (when-let [arch (some-> (or id artifact-id)
+                                     (download-artifact rt))]
+               (cond-> arch
+                 path (some-> (arch/extract+read path)
+                              (vector))
+                 pattern (arch/extract+read-all pattern)))]
+    (when (empty? xmls)
+      (log/warnf "Junit XML artifact '%s' not found or no matching files found, test results will not be added to build.  Path/pattern: %s" artifact-id (or path pattern)))
+    (e/set-value rt :monkey.ci/tests (parse-xmls xmls))))
 
 (defn artifact
   "Creates an artifact definition that can be configured on the job that outputs junit results."

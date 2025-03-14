@@ -1,11 +1,11 @@
-{:deps {com.monkeyci/app {:mvn/version "0.10.1"}
+{:deps {com.monkeyci/app {:mvn/version "0.16.2"}
         diehard/diehard {:mvn/version "0.11.12"}}
 
  :paths ["src"]
  
  :aliases
  {:test
-  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.2.0"}}
+  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.3.1"}}
    :extra-paths ["test" "dev-resources"]
    :exec-fn monkey.test/all}
 
@@ -16,11 +16,18 @@
   {:exec-fn monkey.test/watch}
 
   :jar
-  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.2.0"}}
+  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.3.1"}}
    :exec-fn monkey.build/jar
    :exec-args {:jar "target/plugin-junit.jar"
-               :version-env "LIB_VERSION"
-               :lib com.monkeyci/plugin-junit}}
+               :version [[:env "LIB_VERSION"] "0.2.0-SNAPSHOT"]
+               :lib com.monkeyci/plugin-junit
+               :scm
+               {:url "https://github.com/monkey-projects/plugin-junit"}
+               :pom-data
+               [[:licenses
+                 [:license
+                  [:name "MIT"]
+                  [:url "https://mit-license.org/"]]]]}}
   
   :publish
   {:exec-fn monkey.build/jar+deploy}}}
