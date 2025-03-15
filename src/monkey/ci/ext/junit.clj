@@ -88,6 +88,18 @@
                               (log/warnf "Unable to download artifact (%s), retrying..." (ex-message ex)))}
     (api/download-artifact rt artifact-id)))
 
+(defprotocol AsPattern
+  (->re-pattern [x]))
+
+(extend-protocol AsPattern
+  java.lang.String
+  (->re-pattern [x]
+    (re-pattern x))
+
+  java.util.regex.Pattern
+  (->re-pattern [x]
+    x))
+
 (defmethod e/after-job :junit [_ rt]
   (let [{:keys [id artifact-id path pattern]} (e/get-config rt :junit)
         xmls (when-let [arch (some-> (or id artifact-id)
@@ -95,7 +107,7 @@
                (cond-> arch
                  path (some-> (arch/extract+read path)
                               (vector))
-                 pattern (arch/extract+read-all pattern)))]
+                 pattern (arch/extract+read-all (->re-pattern pattern))))]
     (when (empty? xmls)
       (log/warnf "Junit XML artifact '%s' not found or no matching files found, test results will not be added to build.  Path/pattern: %s" artifact-id (or path pattern)))
     (e/set-value rt :monkey.ci/tests (parse-xmls xmls))))
