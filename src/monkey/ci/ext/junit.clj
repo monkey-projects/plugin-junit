@@ -68,10 +68,14 @@
   nil)
 
 (defn parse-xml [xml]
-  (when xml
-    (with-open [is (java.io.ByteArrayInputStream. (.getBytes xml))]
-      (-> (xml/parse is)
-          (handle-tag)))))
+  (letfn [(normalize [r]
+            (cond-> r
+              (map? r) vector))]
+    (when xml
+      (with-open [is (java.io.ByteArrayInputStream. (.getBytes xml))]
+        (-> (xml/parse is)
+            (handle-tag)
+            (normalize))))))
 
 (defn parse-xmls
   "Parses and consolidates multiple xml files"
