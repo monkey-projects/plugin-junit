@@ -130,7 +130,7 @@
 
 (deftest after-job
   (testing "for single file"
-    (let [rt {:build {:sid ["test-cust" "test-repo" "test-build"]}
+    (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
               :job {:junit {:artifact-id "test-results"
                             :path "junit.xml"}
                     :save-artifacts [{:id "test-results"
@@ -147,9 +147,9 @@
   (testing "for multiple files"
     (testing "that each contain multiple suites"
       (with-tmp-dir dir
-        (let [rt {:build {:sid ["test-cust" "test-repo" "test-build"]}
+        (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
                   :job {:junit {:artifact-id "test-results"
-                                :pattern #"tests/file-.*\.xml"}
+                                :pattern #"file-.*\.xml"}
                         :save-artifacts [{:id "test-results"
                                           :path "target/"}]}}
               arch (gen-results
@@ -157,6 +157,7 @@
                     (fs/create-dirs (fs/path dir "tests"))
                     [["file-1.xml" (gen-multi-suite-xml "test-suite-1" ["case-1" "case-2"])]
                      ["file-2.xml" (gen-multi-suite-xml "test-suite-2" ["case-3" "case-4"])]])]
+          (is (fs/exists? arch))
           (with-redefs [api/download-artifact (fn [_ id]
                                                 (when (= id "test-results")
                                                   (io/input-stream (fs/file arch))))]
@@ -174,9 +175,9 @@
 
     (testing "that each contain a single suite"
       (with-tmp-dir dir
-        (let [rt {:build {:sid ["test-cust" "test-repo" "test-build"]}
+        (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
                   :job {:junit {:artifact-id "test-results"
-                                :pattern #"tests/file-.*\.xml"}
+                                :pattern #"file-.*\.xml"}
                         :save-artifacts [{:id "test-results"
                                           :path "target/"}]}}
               arch (gen-results

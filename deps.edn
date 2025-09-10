@@ -1,20 +1,24 @@
-{:deps {com.monkeyci/app {:mvn/version "0.16.2"}
-        diehard/diehard {:mvn/version "0.11.12"}}
+{:deps {com.monkeyci/app {:mvn/version "0.19.9"}
+        diehard/diehard {:mvn/version "0.12.0"}}
 
  :paths ["src"]
  
  :aliases
+ ;; clj -X:test
  {:test
   {:extra-deps {com.monkeyprojects/build {:mvn/version "0.3.1"}}
    :extra-paths ["test" "dev-resources"]
    :exec-fn monkey.test/all}
 
+  ;; clj -X:test:junit
   :junit
   {:exec-fn monkey.test/junit}
 
+  ;; clj -X:test:watch
   :watch
   {:exec-fn monkey.test/watch}
 
+  ;; clj -X:jar
   :jar
   {:extra-deps {com.monkeyprojects/build {:mvn/version "0.3.1"}}
    :exec-fn monkey.build/jar
@@ -29,5 +33,6 @@
                   [:name "MIT"]
                   [:url "https://mit-license.org/"]]]]}}
   
+  ;; clj -X:publish
   :publish
   {:exec-fn monkey.build/jar+deploy}}}
