@@ -21,7 +21,7 @@ named `junit`, which should contain the necessary configuration.  For example:
 ```clojure
 (ns build
   (:require [monkey.ci.ext.junit :as j]
-            [monkey.ci.build.v2 :as m]))
+            [monkey.ci.api :as m]))
 
 ;; Some build job
 (def test-job
@@ -30,8 +30,8 @@ named `junit`, which should contain the necessary configuration.  For example:
       (m/script ["lein test-junit"])
       (m/save-artifacts [(m/artifact "test-results" "junit.xml")])
       ;; Configuration for the plugin
-      (j/junit {:artifact-id "test-results"
-                :path "junit.xml"})))
+      ;; Alternatively, you can use {:artifact-id "test-results" :path "junit.xml"}
+      (j/junit (m/artifact "test-results" "junit.xml"))))
 
 ;; Jobs in your build script
 [test-job]
@@ -52,7 +52,7 @@ archive, and consolidate all extracted test results.
 ;; Some build job
 (def test-job
   (-> (m/container-job "run-tests")
-      (m/image "docker.io/maven")
+      (m/image "docker.io/maven:latest")
       (m/script ["mvn verify"])
       (m/save-artifacts [(m/artifact "test-results" "target/surefire-reports")])
       ;; Configuration for the plugin
