@@ -7,7 +7,7 @@ parses the information.
 
 ## Usage
 
-[![Clojars Project](https://img.shields.io/clojars/v/com.monkeyci/plugin-clj.svg)](https://clojars.org/com.monkeyci/plugin-clj)
+[![Clojars Project](https://img.shields.io/clojars/v/com.monkeyci/plugin-junit.svg)](https://clojars.org/com.monkeyci/plugin-junit)
 
 First include the library in your build `deps.edn`:
 
