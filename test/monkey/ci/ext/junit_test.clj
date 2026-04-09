@@ -4,10 +4,10 @@
             [clojure.java.io :as io]
             [clojure.string :as cs]
             [monkey.ci.ext.junit :as sut]
-            [monkey.ci.blob :as blob]
-            [monkey.ci.build
-             [api :as api]
-             [core :as bc]]
+            [monkey.ci
+             [api :as m]
+             [blob :as blob]]
+            [monkey.ci.build.api :as api]
             [monkey.ci.extensions :as ext])
   (:import [java.io ByteArrayInputStream]))
 
@@ -208,8 +208,15 @@
 
 (deftest junit
   (testing "sets and gets junit config on the job"
-    (let [job (bc/action-job "test-job" (constantly nil))
+    (let [job (m/action-job "test-job" (constantly nil))
           art (sut/artifact "test-art" "junit.xml")]
       (is (= art (-> job
                      (sut/junit art)
                      (sut/junit)))))))
+
+(deftest read-artifact
+  (testing "configures junit with given artifact"
+    (is (= (sut/artifact "test-id" "junit.xml")
+           (-> (m/container-job "test-job")
+               (sut/read-artifact "test-id")
+               (sut/junit))))))

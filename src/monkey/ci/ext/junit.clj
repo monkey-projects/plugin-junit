@@ -128,3 +128,9 @@
    (:junit job))
   ([job art]
    (assoc job :junit art)))
+
+(defn read-artifact
+  "Convenience function that configures the junit extension to read the test results from
+   the given artifact.  If no path is given, `junit.xml` is assumed."
+  [job id & [path]]
+  (junit job (artifact id (or path "junit.xml"))))
