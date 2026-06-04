@@ -4,24 +4,9 @@
             [clojure.java.io :as io]
             [clojure.string :as cs]
             [monkey.ci.ext.junit :as sut]
-            [monkey.ci
-             [api :as m]
-             [blob :as blob]]
-            [monkey.ci.build.api :as api]
+            [monkey.ci.api :as m]
             [monkey.ci.extensions :as ext])
   (:import [java.io ByteArrayInputStream]))
-
-(defn with-tmp-dir* [f]
-  (let [dir (fs/create-temp-dir)]
-    (try
-      (f (str dir))
-      (finally
-        (fs/delete-tree dir)))))
-
-(defmacro with-tmp-dir [dir & body]
-  `(with-tmp-dir*
-     (fn [~dir]
-       ~@body)))
 
 (deftest parse-xml
   (testing "`nil` if no xml"
@@ -121,46 +106,47 @@
   (str "<testsuites>" (gen-single-suite-xml suite cases) "</testsuites>"))
 
 (defn- gen-results
-  "Writes files into `src` dir and the archives it into `dest`."
-  [dest src files]
+  "Writes generated junit files into `dest` dir."
+  [dest files]
   (doseq [[path contents] files]
-    (spit (fs/file (fs/path src path)) contents))
-  (blob/make-archive (str src) (fs/file dest))
+    (spit (fs/file (fs/path dest path)) contents))
   dest)
 
 (deftest after-job
   (testing "for single file"
-    (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
-              :job {:junit {:artifact-id "test-results"
-                            :path "junit.xml"}
-                    :save-artifacts [{:id "test-results"
-                                      :path "junit.xml"}]}}]
-      (with-redefs [api/download-artifact (fn [_ id]
-                                            (when (= id "test-results")
-                                              (io/input-stream (io/resource "test-results.tgz"))))]
-        (testing "sets parsed xml results in the job result"
-          (is (not-empty (-> (ext/after-job :junit rt)
-                             :job
-                             :result
-                             :monkey.ci/tests)))))))
+    (fs/with-temp-dir [dir]
+      (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
+                :job {:junit {:artifact-id "test-results"
+                              :path "junit.xml"}
+                      :save-artifacts [{:id "test-results"
+                                        :path "junit.xml"}]
+                      :work-dir (str dir)}}]
+        (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+                                       (when (= id "test-results")
+                                         (str (fs/path (io/resource "junit.xml")))))]
+          (testing "sets parsed xml results in the job result"
+            (is (not-empty (-> (ext/after-job :junit rt)
+                               :job
+                               :result
+                               :monkey.ci/tests))))))))
 
   (testing "for multiple files"
     (testing "that each contain multiple suites"
-      (with-tmp-dir dir
+      (fs/with-temp-dir [dir]
         (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
                   :job {:junit {:artifact-id "test-results"
                                 :pattern #"file-.*\.xml"}
                         :save-artifacts [{:id "test-results"
-                                          :path "target/"}]}}
+                                          :path "target/"}]
+                        :work-dir dir}}
               arch (gen-results
-                    (fs/path dir "test-results.tgz")
                     (fs/create-dirs (fs/path dir "tests"))
                     [["file-1.xml" (gen-multi-suite-xml "test-suite-1" ["case-1" "case-2"])]
                      ["file-2.xml" (gen-multi-suite-xml "test-suite-2" ["case-3" "case-4"])]])]
           (is (fs/exists? arch))
-          (with-redefs [api/download-artifact (fn [_ id]
-                                                (when (= id "test-results")
-                                                  (io/input-stream (fs/file arch))))]
+          (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+                                         (when (= id "test-results")
+                                           (fs/file arch)))]
             (testing "sets parsed xml results in the job result"
               (let [r (-> (ext/after-job :junit rt)
                           :job
@@ -174,20 +160,19 @@
                              count)))))))))
 
     (testing "that each contain a single suite"
-      (with-tmp-dir dir
+      (fs/with-temp-dir [dir]
         (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
                   :job {:junit {:artifact-id "test-results"
                                 :pattern #"file-.*\.xml"}
                         :save-artifacts [{:id "test-results"
                                           :path "target/"}]}}
               arch (gen-results
-                    (fs/path dir "test-results.tgz")
                     (fs/create-dirs (fs/path dir "tests"))
                     [["file-1.xml" (gen-single-suite-xml "test-suite-1" ["case-1" "case-2"])]
                      ["file-2.xml" (gen-single-suite-xml "test-suite-2" ["case-3" "case-4"])]])]
-          (with-redefs [api/download-artifact (fn [_ id]
-                                                (when (= id "test-results")
-                                                  (io/input-stream (fs/file arch))))]
+          (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+                                         (when (= id "test-results")
+                                           (fs/file arch)))]
             (testing "sets parsed xml results in the job result"
               (let [r (-> (ext/after-job :junit rt)
                           :job

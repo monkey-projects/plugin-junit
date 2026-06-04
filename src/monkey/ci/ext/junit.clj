@@ -2,14 +2,13 @@
   "Main namespace for the junit extension.  It can be used to read the
    contents of the `junit.xml` test result file, and converts it to a
    format that can be used in MonkeyCI job results."
-  (:require [clojure.tools.logging :as log]
-            [clojure.xml :as xml]
-            [diehard.core :as dh]
+  (:require [babashka.fs :as fs]
+            [clojure.data.xml :as xml]
+            [clojure.tools.logging :as log]
             [medley.core :as mc]
-            [monkey.ci.build
+            [monkey.ci
              [api :as api]
-             [archive :as arch]]
-            [monkey.ci.extensions :as e]))
+             [extensions :as e]]))
 
 (defn- select-attrs [el attr-map]
   (reduce-kv (fn [r k v]
@@ -82,16 +81,6 @@
   [xmls]
   (mapcat parse-xml xmls))
 
-(defn- download-artifact [artifact-id rt]
-  ;; It may occur that the artifact in question is not available yet.  So
-  ;; retry a few times.
-  (dh/with-retry {:retry-on Exception
-                  :max-retries 5
-                  :delay-ms 1000
-                  :on-retry (fn [_ ex]
-                              (log/warnf "Unable to download artifact (%s), retrying..." (ex-message ex)))}
-    (api/download-artifact rt artifact-id)))
-
 (defprotocol AsPattern
   (->re-pattern [x]))
 
@@ -104,20 +93,29 @@
   (->re-pattern [x]
     x))
 
+(defn- read-files [dir pattern]
+  (->> (fs/list-dir dir (fn [p]
+                          (re-matches pattern (str (fs/relativize dir p)))))
+       (map (comp slurp fs/file))))
+
 (defmethod e/after-job :junit [_ rt]
   (let [{:keys [id artifact-id path pattern]} (e/get-config rt :junit)
+        tmp (fs/create-temp-dir {:dir (api/work-dir (:job rt))})
         xmls (when-let [arch (some-> (or id artifact-id)
-                                     (download-artifact rt))]
+                                     (api/artifact (str tmp))
+                                     (as-> v (api/get-artifact rt v)))]
                (cond-> arch
-                 path (some-> (arch/extract+read path)
+                 path (some-> (fs/file)
+                              (slurp)
                               (vector))
-                 pattern (arch/extract+read-all (->re-pattern pattern))))]
+                 pattern (read-files (->re-pattern pattern))))]
     (when (empty? xmls)
       (log/warnf "Junit XML artifact '%s' not found or no matching files found, test results will not be added to build.  Path/pattern: %s" artifact-id (or path pattern)))
     (e/set-value rt :monkey.ci/tests (parse-xmls xmls))))
 
 (defn artifact
-  "Creates an artifact definition that can be configured on the job that outputs junit results."
+  "Creates an artifact definition that can be configured on the job that outputs 
+   junit results, but you can also use `monkey.ci.api/artifact`."
   [id path]
   {:artifact-id id
    :path path})
