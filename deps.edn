@@ -1,4 +1,5 @@
-{:deps {com.monkeyci/script {:mvn/version "0.27.0-SNAPSHOT"}}
+{:deps {com.monkeyci/script {:mvn/version "0.27.0-SNAPSHOT"}
+        org.clojure/data.xml {:mvn/version "0.0.8"}}
 
  :paths ["src"]
  
@@ -8,7 +9,8 @@
 
   :test
   ;; clj -X:test
-  {:extra-deps {com.monkeyprojects/build {:mvn/version "0.3.1"}}
+  {:extra-deps {ch.qos.logback/logback-classic {:mvn/version "1.5.34"}
+                com.monkeyprojects/build {:mvn/version "0.3.1"}}
    :extra-paths ["test" "dev-resources"]
    :exec-fn monkey.test/all}
 
@@ -34,7 +36,11 @@
                  [:license
                   [:name "MIT"]
                   [:url "https://mit-license.org/"]]]]}}
+
+  :install
+  ;; clj -T:jar:install
+  {:exec-fn monkey.build/jar+install}
   
-  ;; clj -X:publish
+  ;; clj -T:jar:publish
   :publish
   {:exec-fn monkey.build/jar+deploy}}}
