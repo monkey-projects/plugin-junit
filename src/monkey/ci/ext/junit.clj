@@ -98,14 +98,23 @@
                           (re-matches pattern (str (fs/relativize dir p)))))
        (map (comp slurp fs/file))))
 
+(defn- junit-file
+  "Archives can be a directory, where the files have been extracted to.  In that case, combine
+   it with the archive path."
+  [f path]
+  (cond-> f
+    (fs/directory? f)
+    (fs/path path)))
+
 (defmethod e/after-job :junit [_ rt]
   (let [{:keys [id artifact-id path pattern]} (e/get-config rt :junit)
-        tmp (fs/create-temp-dir {:dir (api/work-dir (:job rt))})
+        tmp (fs/create-temp-dir {:dir (api/job-work-dir rt)})
         xmls (when-let [arch (some-> (or id artifact-id)
                                      (api/artifact (str tmp))
                                      (as-> v (api/get-artifact rt v)))]
                (cond-> arch
-                 path (some-> (fs/file)
+                 path (some-> (junit-file path)
+                              (fs/file)
                               (slurp)
                               (vector))
                  pattern (read-files (->re-pattern pattern))))]

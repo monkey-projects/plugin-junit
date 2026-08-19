@@ -130,6 +130,23 @@
                                :result
                                :monkey.ci/tests))))))))
 
+  (testing "for file restored to dir"
+    (fs/with-temp-dir [dir]
+      (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
+                :job {:junit {:artifact-id "test-results"
+                              :path "junit.xml"}
+                      :save-artifacts [{:id "test-results"
+                                        :path "junit.xml"}]}}]
+        (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+                                       (when (= id "test-results")
+                                         (io/copy (fs/file (io/resource "junit.xml")) (fs/file dir "junit.xml"))
+                                         (str dir)))]
+          (testing "sets parsed xml results in the job result"
+            (is (not-empty (-> (ext/after-job :junit rt)
+                               :job
+                               :result
+                               :monkey.ci/tests))))))))
+
   (testing "for multiple files"
     (testing "that each contain multiple suites"
       (fs/with-temp-dir [dir]
