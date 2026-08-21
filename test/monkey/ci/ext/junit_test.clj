@@ -116,12 +116,12 @@
   (testing "for single file"
     (fs/with-temp-dir [dir]
       (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
+                :job-work-dir (str dir)
                 :job {:junit {:artifact-id "test-results"
                               :path "junit.xml"}
                       :save-artifacts [{:id "test-results"
-                                        :path "junit.xml"}]
-                      :work-dir (str dir)}}]
-        (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+                                        :path "junit.xml"}]}}]
+        (with-redefs [m/get-artifact (fn [_ {:keys [path id]}]
                                        (when (= id "test-results")
                                          (str (fs/path (io/resource "junit.xml")))))]
           (testing "sets parsed xml results in the job result"
@@ -133,14 +133,15 @@
   (testing "for file restored to dir"
     (fs/with-temp-dir [dir]
       (let [rt {:build {:sid ["test-org" "test-repo" "test-build"]}
+                :job-work-dir (str dir)
                 :job {:junit {:artifact-id "test-results"
                               :path "junit.xml"}
                       :save-artifacts [{:id "test-results"
                                         :path "junit.xml"}]}}]
-        (with-redefs [m/get-artifact (fn [_ {:keys [id]}]
+        (with-redefs [m/get-artifact (fn [_ {:keys [path id]}]
                                        (when (= id "test-results")
-                                         (io/copy (fs/file (io/resource "junit.xml")) (fs/file dir "junit.xml"))
-                                         (str dir)))]
+                                         (io/copy (fs/file (io/resource "junit.xml")) (fs/file path "junit.xml"))
+                                         (str path)))]
           (testing "sets parsed xml results in the job result"
             (is (not-empty (-> (ext/after-job :junit rt)
                                :job

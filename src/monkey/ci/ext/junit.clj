@@ -108,6 +108,7 @@
 
 (defmethod e/after-job :junit [_ rt]
   (let [{:keys [id artifact-id path pattern]} (e/get-config rt :junit)
+        ;; Download the artifact to a temp location
         tmp (fs/create-temp-dir {:dir (api/job-work-dir rt)})
         xmls (when-let [arch (some-> (or id artifact-id)
                                      (api/artifact (str tmp))
@@ -120,7 +121,10 @@
                  pattern (read-files (->re-pattern pattern))))]
     (when (empty? xmls)
       (log/warnf "Junit XML artifact '%s' not found or no matching files found, test results will not be added to build.  Path/pattern: %s" artifact-id (or path pattern)))
-    (e/set-value rt :monkey.ci/tests (parse-xmls xmls))))
+    (try
+      (e/set-value rt :monkey.ci/tests (parse-xmls xmls))
+      (finally
+        (fs/delete-tree tmp)))))
 
 (defn artifact
   "Creates an artifact definition that can be configured on the job that outputs 
